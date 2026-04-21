@@ -1,4 +1,6 @@
+# Claude
 plans/
+.claude/
 
 # Environment
 .env

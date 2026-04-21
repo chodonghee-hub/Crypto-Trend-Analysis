@@ -1,0 +1,122 @@
+/* 전체 레이아웃 — 그리드 / 플렉스 / 반응형 */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-feature-settings: "calt", "rlig";
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Navigation ──────────────────────────────────────────────────────── */
+.navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--nav-height);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-6);
+  background: rgba(5, 5, 7, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.navbar__left  { display: flex; align-items: center; gap: var(--sp-3); }
+.navbar__center { display: flex; align-items: center; gap: var(--sp-1); }
+.navbar__right { display: flex; align-items: center; gap: var(--sp-4); }
+
+/* ── App wrapper ─────────────────────────────────────────────────────── */
+.app-layout {
+  display: flex;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding-top: var(--nav-height);
+  min-height: 100vh;
+}
+
+/* ── Main content ────────────────────────────────────────────────────── */
+.main-content {
+  flex: 1;
+  width: var(--main-ratio);
+  min-width: 0;
+  padding: var(--sp-6) var(--sp-5) var(--sp-8) var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  border-right: 1px solid var(--color-border);
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-ratio);
+  flex-shrink: 0;
+  padding: var(--sp-6) var(--sp-5) var(--sp-8) var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  overflow-y: auto;
+  height: calc(100vh - var(--nav-height));
+  position: sticky;
+  top: var(--nav-height);
+}
+
+/* ── Stats row (Zone C + D) ──────────────────────────────────────────── */
+.stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4);
+}
+
+/* ── Correlation row (Zone E + F) ────────────────────────────────────── */
+.correlation-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4);
+}
+
+/* ── Market stats grid (Zone D) ──────────────────────────────────────── */
+.market-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .app-layout { flex-direction: column; }
+  .main-content { width: 100%; border-right: none; border-bottom: 1px solid var(--color-border); }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-4);
+  }
+}
+
+@media (max-width: 767px) {
+  .navbar { padding: 0 var(--sp-4); }
+  .navbar__center { display: none; }
+  .main-content { padding: var(--sp-4) var(--sp-4) var(--sp-6); gap: var(--sp-3); }
+  .sidebar { grid-template-columns: 1fr; padding: var(--sp-4); }
+  .stats-row, .correlation-row { grid-template-columns: 1fr; }
+  .market-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 420px) {
+  .market-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--color-bg); }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-pill); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-tertiary); }

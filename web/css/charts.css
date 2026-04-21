@@ -1,0 +1,105 @@
+/* 차트 컨테이너 및 범례 스타일 */
+
+/* ── Zone B: Dual-axis chart ─────────────────────────────────────────── */
+.chart-section {}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.chart-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 280px;
+}
+.chart-canvas-wrap canvas { width: 100% !important; height: 100% !important; }
+
+.chart-legend {
+  display: flex;
+  gap: var(--sp-5);
+  margin-top: var(--sp-3);
+  flex-wrap: wrap;
+}
+.chart-legend__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+.chart-legend__dot {
+  width: 8px; height: 8px;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+}
+.chart-legend__line {
+  width: 16px;
+  height: 2px;
+  border-top: 2px dashed currentColor;
+  flex-shrink: 0;
+}
+
+/* ── Zone E: Scatter chart ───────────────────────────────────────────── */
+.scatter-section {}
+.scatter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.scatter-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 220px;
+}
+.scatter-canvas-wrap canvas { width: 100% !important; height: 100% !important; }
+
+/* ── Zone F: Lag bar chart ───────────────────────────────────────────── */
+.lag-section {}
+.lag-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-4);
+}
+.lag-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 220px;
+}
+.lag-canvas-wrap canvas { width: 100% !important; height: 100% !important; }
+
+.lag-legend {
+  display: flex;
+  gap: var(--sp-4);
+  margin-top: var(--sp-3);
+  flex-wrap: wrap;
+}
+.lag-legend__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+.lag-legend__swatch {
+  width: 10px; height: 10px;
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+}
+
+/* ── Chart section title ─────────────────────────────────────────────── */
+.section-title {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.3px;
+}
