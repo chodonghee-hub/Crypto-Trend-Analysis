@@ -1,0 +1,23 @@
+plans/
+
+# Environment
+.env
+
+# Data (large files)
+data/raw/
+data/processed/
+output/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# FE
+Crypto Sentiment Dashboard.html
