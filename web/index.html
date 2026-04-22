@@ -9,13 +9,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="css/design-tokens.css" />
-  <link rel="stylesheet" href="css/layout.css" />
-  <link rel="stylesheet" href="css/components.css" />
-  <link rel="stylesheet" href="css/charts.css" />
-
-  <!-- Chart.js UMD (no build step) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -32,8 +25,8 @@
   </div>
 
   <div class="navbar__center">
-    <a href="#" class="nav-link active">Dashboard</a>
-    <a href="#zone-e" class="nav-link">Analysis</a>
+    <a href="#" class="nav-link active">대시보드</a>
+    <a href="#zone-e" class="nav-link">분석</a>
   </div>
 
   <div class="navbar__right">
@@ -63,12 +56,21 @@
           <span class="price-change" id="price-change24h">—</span>
         </div>
       </div>
-      <div class="btn-group" style="align-self:flex-end;">
-        <button class="btn active" data-tf="1H">1H</button>
-        <button class="btn" data-tf="4H">4H</button>
-        <button class="btn" data-tf="1D">1D</button>
-        <button class="btn" data-tf="7D">7D</button>
-        <button class="btn" data-tf="1M">1M</button>
+      <div style="align-self:flex-end; display:flex; gap:var(--sp-3); align-items:center; flex-wrap:wrap;">
+        <div class="btn-group" id="range-group">
+          <button class="btn" data-range="1D">1D</button>
+          <button class="btn active" data-range="7D">7D</button>
+          <button class="btn" data-range="1M">1M</button>
+          <button class="btn" data-range="3M">3M</button>
+          <button class="btn" data-range="6M">6M</button>
+          <button class="btn" data-range="1Y">1Y</button>
+          <button class="btn" data-range="ALL">ALL</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn" id="btn-zoom-in"    title="Zoom In">+</button>
+          <button class="btn" id="btn-zoom-out"   title="Zoom Out">−</button>
+          <button class="btn" id="btn-zoom-reset" title="Reset Zoom">↺</button>
+        </div>
       </div>
     </section>
 
@@ -76,8 +78,18 @@
     <section class="card card--flush">
       <div style="padding: var(--sp-5);">
         <div class="chart-header">
-          <span class="section-title">Price + Sentiment Overlay</span>
-          <span class="last-updated" id="last-updated">—</span>
+          <span class="section-title">가격 + 감성 오버레이</span>
+          <div style="display:flex; gap:var(--sp-2); align-items:center; flex-wrap:wrap;">
+            <div class="btn-group" id="price-mode-group">
+              <button class="btn active" data-price-mode="series">Line</button>
+              <button class="btn" data-price-mode="candle">Candle</button>
+            </div>
+            <div class="btn-group" id="sentiment-mode-group">
+              <button class="btn active" data-sentiment-mode="scatter">Scatter</button>
+              <button class="btn" data-sentiment-mode="series">Line</button>
+            </div>
+            <span class="last-updated" id="last-updated">—</span>
+          </div>
         </div>
         <div class="chart-canvas-wrap">
           <canvas id="dual-chart"></canvas>
@@ -85,11 +97,11 @@
         <div class="chart-legend">
           <div class="chart-legend__item">
             <span class="chart-legend__dot" style="background:var(--color-accent);"></span>
-            BTC Price (USD)
+            BTC 가격 (USD)
           </div>
           <div class="chart-legend__item">
             <span class="chart-legend__line" style="color:var(--color-purple);"></span>
-            Sentiment Score
+            감성 점수
           </div>
         </div>
       </div>
@@ -100,29 +112,29 @@
 
       <!-- Zone C: Performance -->
       <section class="card">
-        <div class="card__title">Performance</div>
+        <div class="card__title">퍼포먼스</div>
         <div class="perf-grid">
           <div>
-            <div class="perf-item__label">ATH</div>
+            <div class="perf-item__label">역대 최고가</div>
             <div class="perf-item__value" id="perf-ath">—</div>
           </div>
           <div>
-            <div class="perf-item__label">1h Change</div>
+            <div class="perf-item__label">1시간 변동률</div>
             <div class="perf-item__value" id="perf-1h">—</div>
           </div>
           <div>
-            <div class="perf-item__label">24h Change</div>
+            <div class="perf-item__label">24시간 변동률</div>
             <div class="perf-item__value" id="perf-24h">—</div>
           </div>
           <div>
-            <div class="perf-item__label">7d Change</div>
+            <div class="perf-item__label">7일 변동률</div>
             <div class="perf-item__value" id="perf-7d">—</div>
           </div>
         </div>
         <div class="range-bar-wrap">
           <div class="range-bar-label">
             <span id="range-low">—</span>
-            <span style="color:var(--color-text-tertiary); font-size:10px;">24h Range</span>
+            <span style="color:var(--color-text-tertiary); font-size:10px;">24시간 범위</span>
             <span id="range-high">—</span>
           </div>
           <div class="range-bar">
@@ -134,30 +146,30 @@
 
       <!-- Zone D: Market Stats -->
       <section class="card">
-        <div class="card__title">Market Stats</div>
+        <div class="card__title">시장 통계</div>
         <div class="market-grid">
           <div>
-            <div class="stat-cell__label">Market Cap</div>
+            <div class="stat-cell__label">시가총액</div>
             <div class="stat-cell__value" id="stat-mcap">—</div>
           </div>
           <div>
-            <div class="stat-cell__label">24h Volume</div>
+            <div class="stat-cell__label">24시간 거래량</div>
             <div class="stat-cell__value" id="stat-volume">—</div>
           </div>
           <div>
-            <div class="stat-cell__label">Circulating Supply</div>
+            <div class="stat-cell__label">유통량</div>
             <div class="stat-cell__value" id="stat-supply">—</div>
           </div>
           <div>
-            <div class="stat-cell__label">All-Time High</div>
+            <div class="stat-cell__label">역대 최고가</div>
             <div class="stat-cell__value" id="stat-ath">—</div>
           </div>
           <div>
-            <div class="stat-cell__label">Fear &amp; Greed</div>
+            <div class="stat-cell__label">공포 &amp; 탐욕</div>
             <div class="stat-cell__value" id="stat-fg">—</div>
           </div>
           <div>
-            <div class="stat-cell__label">BTC Dominance</div>
+            <div class="stat-cell__label">BTC 도미넌스</div>
             <div class="stat-cell__value" id="stat-dom">—</div>
           </div>
         </div>
@@ -170,10 +182,10 @@
       <!-- Zone E: Scatter -->
       <section class="card">
         <div class="scatter-header">
-          <span class="section-title">Sentiment vs. Return</span>
+          <span class="section-title">감성 vs. 수익률</span>
           <div class="btn-group">
-            <button class="btn active" data-lag="return_15m">T+15m</button>
-            <button class="btn" data-lag="return_60m">T+60m</button>
+            <button class="btn active" data-lag="return_15m">T+15분</button>
+            <button class="btn" data-lag="return_60m">T+60분</button>
           </div>
         </div>
         <div class="scatter-canvas-wrap">
@@ -182,19 +194,20 @@
         <div class="chart-legend" style="margin-top:var(--sp-3);">
           <div class="chart-legend__item">
             <span class="chart-legend__dot" style="background:rgba(47,214,161,0.8);"></span>
-            Positive return
+            양의 수익률
           </div>
           <div class="chart-legend__item">
             <span class="chart-legend__dot" style="background:rgba(251,86,91,0.8);"></span>
-            Negative return
+            음의 수익률
           </div>
         </div>
+        <div id="data-generated-at" style="margin-top:var(--sp-2); font-size:10px; color:var(--color-text-tertiary); text-align:right;"></div>
       </section>
 
       <!-- Zone F: Lag bar chart -->
       <section class="card">
         <div class="lag-header">
-          <span class="section-title">Correlation by Time Lag</span>
+          <span class="section-title">시차별 상관관계</span>
         </div>
         <div class="lag-canvas-wrap">
           <canvas id="lag-canvas"></canvas>
@@ -202,15 +215,15 @@
         <div class="lag-legend">
           <div class="lag-legend__item">
             <span class="lag-legend__swatch" style="background:var(--color-accent);"></span>
-            Positive r (p &lt; 0.05)
+            양의 상관 (p &lt; 0.05)
           </div>
           <div class="lag-legend__item">
             <span class="lag-legend__swatch" style="background:var(--color-down);"></span>
-            Negative r
+            음의 상관
           </div>
           <div class="lag-legend__item">
             <span class="lag-legend__swatch" style="background:var(--color-neutral);"></span>
-            Not significant
+            통계적 유의성 없음
           </div>
         </div>
       </section>
@@ -223,15 +236,15 @@
 
     <!-- Sentiment Gauge ─────────────────────────────────────────── -->
     <section class="card">
-      <div class="card__title">Sentiment Index</div>
+      <div class="card__title">감성 지수</div>
       <div class="gauge-score neutral" id="gauge-score">—</div>
       <div class="gauge-meta">
-        <span id="gauge-count">—</span> articles today
+        <span id="gauge-count">—</span>건 (오늘)
       </div>
       <div class="gauge-bar-wrap">
         <div class="gauge-bar-labels">
-          <span>Bearish</span>
-          <span>Bullish</span>
+          <span>약세</span>
+          <span>강세</span>
         </div>
         <div class="gauge-bar">
           <div class="gauge-needle" id="gauge-needle" style="left:50%;"></div>
@@ -241,48 +254,48 @@
 
     <!-- Community Poll ──────────────────────────────────────────── -->
     <section class="card">
-      <div class="card__title">Community Poll</div>
+      <div class="card__title">커뮤니티 투표</div>
       <p style="font-size:12px; color:var(--color-text-tertiary); margin-bottom:var(--sp-4);">
-        Where is BTC headed?
+        BTC는 어디로 향할까요?
       </p>
       <div class="poll-buttons">
         <button class="poll-btn poll-btn--bullish" id="poll-bull">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="18 15 12 9 6 15"/>
           </svg>
-          <span class="poll-btn__label">Bullish</span>
+          <span class="poll-btn__label">강세</span>
         </button>
         <button class="poll-btn poll-btn--bearish" id="poll-bear">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="6 9 12 15 18 9"/>
           </svg>
-          <span class="poll-btn__label">Bearish</span>
+          <span class="poll-btn__label">약세</span>
         </button>
       </div>
       <div class="poll-result-row">
         <div class="poll-result-label">
-          <span>Bullish</span><span id="poll-bull-pct">50%</span>
+          <span>강세</span><span id="poll-bull-pct">50%</span>
         </div>
         <div class="poll-bar poll-bar--bull" id="poll-bull-bar" style="width:50%;"></div>
       </div>
       <div class="poll-result-row" style="margin-top:8px;">
         <div class="poll-result-label">
-          <span>Bearish</span><span id="poll-bear-pct">50%</span>
+          <span>약세</span><span id="poll-bear-pct">50%</span>
         </div>
         <div class="poll-bar poll-bar--bear" id="poll-bear-bar" style="width:50%;"></div>
       </div>
-      <div class="poll-total" id="poll-total">0 votes</div>
+      <div class="poll-total" id="poll-total">0 표</div>
     </section>
 
     <!-- News Headlines ──────────────────────────────────────────── -->
     <section class="card" style="flex:1; min-height:0;">
-      <div class="card__title">News Headlines</div>
+      <div class="card__title">최신 뉴스</div>
       <div class="news-list" id="news-list">
         <div class="empty-state">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-state__icon">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
-          <span>Loading...</span>
+          <span>로딩 중...</span>
         </div>
       </div>
     </section>

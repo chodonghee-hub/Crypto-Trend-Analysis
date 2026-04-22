@@ -1,3 +1,5 @@
+import Chart from 'chart.js/auto';
+
 /**
  * Zone E — 감성 vs 수익률 산점도
  * Zone F — 시간 지연별 상관계수 바 차트
@@ -50,19 +52,21 @@ function renderScatter(canvasId, lagKey) {
   const negPoints = points.filter(p => p.y < 0);
   const trendLine = linearRegression(points);
 
+  const lagLabel = lagKey.replace('return_', 'T+').replace('m', '분');
+
   const cfg = {
     type: 'scatter',
     data: {
       datasets: [
         {
-          label: 'Positive return',
+          label: '양의 수익률',
           data: posPoints,
           backgroundColor: 'rgba(47, 214, 161, 0.55)',
           pointRadius: 5,
           pointHoverRadius: 7,
         },
         {
-          label: 'Negative return',
+          label: '음의 수익률',
           data: negPoints,
           backgroundColor: 'rgba(251, 86, 91, 0.55)',
           pointRadius: 5,
@@ -70,7 +74,7 @@ function renderScatter(canvasId, lagKey) {
         },
         ...(trendLine
           ? [{
-              label: 'Trend',
+              label: '추세선',
               type: 'line',
               data: trendLine,
               borderColor: 'rgba(242, 242, 242, 0.25)',
@@ -98,12 +102,16 @@ function renderScatter(canvasId, lagKey) {
           callbacks: {
             title(items) {
               const raw = items[0]?.raw;
-              return raw?.date ? new Date(raw.date).toLocaleDateString('ko-KR') : '';
+              if (!raw?.date) return '';
+              return new Date(raw.date).toLocaleString('ko-KR', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul',
+              }) + ' (KST)';
             },
             label(ctx) {
               return [
-                `  Sentiment: ${ctx.parsed.x.toFixed(3)}`,
-                `  Return:    ${ctx.parsed.y.toFixed(4)}%`,
+                `  감성 점수: ${ctx.parsed.x.toFixed(3)}`,
+                `  수익률:    ${ctx.parsed.y.toFixed(4)}%`,
               ];
             },
           },
@@ -113,7 +121,7 @@ function renderScatter(canvasId, lagKey) {
         x: {
           title: {
             display: true,
-            text: 'Sentiment Score',
+            text: '감성 점수',
             color: '#8b949e',
             font: { family: "'SFMono-Regular', monospace", size: 10 },
           },
@@ -124,7 +132,7 @@ function renderScatter(canvasId, lagKey) {
         y: {
           title: {
             display: true,
-            text: `Return (${lagKey.replace('return_', 'T+')})  %`,
+            text: `수익률 (${lagLabel})  %`,
             color: '#8b949e',
             font: { family: "'SFMono-Regular', monospace", size: 10 },
           },
@@ -150,11 +158,13 @@ export function initLagChart(canvasId, lagData) {
   if (!canvas || !lagData?.length) return;
 
   const labels = lagData.map(d => `T+${d.lag}`);
-  const rValues = lagData.map(d => d.r ?? 0);
+  const rRaw = lagData.map(d => d.r);          // null = 데이터 부족
+  const rValues = lagData.map(d => d.r ?? 0);  // 차트 렌더링용 (null → 0)
   const pValues = lagData.map(d => d.p);
 
-  const barColors = rValues.map((r, i) => {
-    if (pValues[i] > 0.05) return '#8b949e';
+  const barColors = rRaw.map((r, i) => {
+    if (r == null) return '#8b949e';           // 데이터 부족 → 회색
+    if (pValues[i] > 0.05) return '#8b949e';   // 유의하지 않음 → 회색
     return r >= 0 ? '#0ea5e9' : '#fb565b';
   });
 
@@ -185,12 +195,17 @@ export function initLagChart(canvasId, lagData) {
           callbacks: {
             label(ctx) {
               const i = ctx.dataIndex;
+              const r = rRaw[i];
               const p = pValues[i];
-              const sig = p == null ? '' : p <= 0.01 ? ' **' : p <= 0.05 ? ' *' : ' (n.s.)';
+              const n = lagData[i].n ?? '?';
+              if (r == null) {
+                return [`  데이터 부족 (n=${n}, 최소 5 필요)`];
+              }
+              const sig = p <= 0.01 ? ' **' : p <= 0.05 ? ' *' : ' (유의하지 않음)';
               return [
                 `  r = ${ctx.parsed.y.toFixed(4)}${sig}`,
-                `  p = ${p?.toFixed(4) ?? 'N/A'}`,
-                `  n = ${lagData[i].n ?? '?'}`,
+                `  p = ${p?.toFixed(4) ?? '없음'}`,
+                `  n = ${n}`,
               ];
             },
           },
@@ -223,15 +238,21 @@ export function initLagChart(canvasId, lagData) {
         const { ctx } = chart;
         chart.data.datasets[0].data.forEach((r, i) => {
           const p = pValues[i];
-          if (p == null) return;
-          const sig = p <= 0.01 ? '**' : p <= 0.05 ? '*' : '';
-          const label = `p=${p.toFixed(3)}${sig ? ' ' + sig : ''}`;
+          const rOrig = rRaw[i];
           const meta = chart.getDatasetMeta(0);
           const bar  = meta.data[i];
           ctx.save();
           ctx.fillStyle = '#8b949e';
           ctx.font = `10px 'SFMono-Regular', monospace`;
           ctx.textAlign = 'center';
+          if (rOrig == null) {
+            ctx.fillText('부족', bar.x, bar.y - 6);
+            ctx.restore();
+            return;
+          }
+          if (p == null) { ctx.restore(); return; }
+          const sig = p <= 0.01 ? '**' : p <= 0.05 ? '*' : '';
+          const label = `p=${p.toFixed(3)}${sig ? ' ' + sig : ''}`;
           const yPos = r >= 0 ? bar.y - 6 : bar.y + 14;
           ctx.fillText(label, bar.x, yPos);
           ctx.restore();

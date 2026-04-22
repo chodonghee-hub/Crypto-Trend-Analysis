@@ -29,7 +29,7 @@ MODEL_NAME = "ProsusAI/finbert"
 OUTPUT_FILE = DATA_PROC / "news_sentiment.csv"
 
 NEUTRAL_PROB_THRESHOLD = 0.5
-DIFF_THRESHOLD = 0.15
+DIFF_THRESHOLD = 0.10
 
 
 def _get_device() -> str:
@@ -123,22 +123,45 @@ def _label(row: pd.Series) -> str:
 
 def run_sentiment_pipeline(news_df: pd.DataFrame, batch_size: int = 64) -> pd.DataFrame:
     """
-    Full pipeline: takes a news DataFrame (must have 'title', 'published_at', 'url')
-    and returns a merged DataFrame with sentiment columns added.
-    Saves result to data/processed/news_sentiment.csv.
+    증분 처리 파이프라인: 이미 score가 있는 기사는 FinBERT를 재실행하지 않는다.
+    신규 기사만 추론 후 기존 결과와 합쳐 저장한다.
     """
-    titles = news_df["title"].fillna("").tolist()
+    SCORE_COLS = ["positive_prob", "neutral_prob", "negative_prob", "score", "is_valid", "sentiment_label"]
+
+    # ── 기존 결과 로드 ─────────────────────────────────────────────
+    if OUTPUT_FILE.exists() and "url" in news_df.columns:
+        existing_df = pd.read_csv(OUTPUT_FILE, parse_dates=["published_at"])
+        scored_urls = set(existing_df["url"].dropna())
+        new_df = news_df[~news_df["url"].isin(scored_urls)].reset_index(drop=True)
+        log.info("증분 처리: %d건 신규 / %d건 기존 캐시 재사용", len(new_df), len(news_df) - len(new_df))
+    else:
+        existing_df = pd.DataFrame()
+        new_df = news_df.reset_index(drop=True)
+        log.info("전체 처리: %d건", len(new_df))
+
+    # ── 신규 기사만 FinBERT 추론 ───────────────────────────────────
+    if new_df.empty:
+        log.info("신규 기사 없음 — 기존 캐시 반환")
+        return existing_df
+
+    titles = new_df["title"].fillna("").tolist()
     nlp = load_finbert_pipeline()
     scores_df = score_headlines(titles, nlp=nlp, batch_size=batch_size)
+    new_result = new_df.reset_index(drop=True).join(scores_df.drop(columns=["title"]))
 
-    result = news_df.reset_index(drop=True).join(
-        scores_df.drop(columns=["title"])
-    )
+    # ── 기존 + 신규 병합 후 저장 ──────────────────────────────────
+    if not existing_df.empty:
+        result = pd.concat([existing_df, new_result], ignore_index=True)
+        if "url" in result.columns:
+            result = result.drop_duplicates("url", keep="last")
+    else:
+        result = new_result
 
+    result = result.sort_values("published_at").reset_index(drop=True)
     result.to_csv(OUTPUT_FILE, index=False)
     log.info("Sentiment results saved → %s  (valid: %d / %d)",
              OUTPUT_FILE,
-             result["is_valid"].sum(),
+             result["is_valid"].sum() if "is_valid" in result.columns else "?",
              len(result))
     return result
 

@@ -40,10 +40,11 @@ def aggregate_to_windows(sentiment_df: pd.DataFrame, window_minutes: int = 5) ->
         confidence_i = max(positive_prob, negative_prob)
         window_score = Σ(score_i × confidence_i) / Σ(confidence_i)
 
-    Only rows with is_valid=True are included.
+    중립 기사 포함 전체 기사를 집계에 사용한다.
+    중립 기사는 confidence 가 낮아 자동으로 낮은 가중치를 받는다.
     Returns a DataFrame indexed by window_start (UTC, floored to window_minutes).
     """
-    df = sentiment_df[sentiment_df["is_valid"]].copy()
+    df = sentiment_df.copy()
     df["published_at"] = pd.to_datetime(df["published_at"], utc=True)
     df["confidence"] = df[["positive_prob", "negative_prob"]].max(axis=1)
 
@@ -64,7 +65,7 @@ def aggregate_to_windows(sentiment_df: pd.DataFrame, window_minutes: int = 5) ->
 
     agg = df.groupby("window_start")[["confidence", "score"]].apply(weighted_avg).reset_index()
     agg["window_start"] = pd.to_datetime(agg["window_start"], utc=True)
-    log.info("Aggregated %d valid news → %d windows (%d-min)", len(df), len(agg), window_minutes)
+    log.info("Aggregated %d news (중립 포함) → %d windows (%d-min)", len(df), len(agg), window_minutes)
     return agg
 
 
@@ -129,7 +130,7 @@ def compute_correlations(merged_df: pd.DataFrame, lags: list[int] = LAGS) -> pd.
         col = f"return_{lag}m"
         subset = merged_df[["window_score", col]].dropna()
         n = len(subset)
-        if n < 30:
+        if n < 5:
             log.warning("Lag T+%dm: only %d rows — skipping", lag, n)
             records.append({"lag_min": lag, "r": np.nan, "p_value": np.nan, "n": n, "significant": False})
             continue

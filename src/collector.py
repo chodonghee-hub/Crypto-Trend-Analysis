@@ -158,6 +158,25 @@ def _save_klines_monthly(df: pd.DataFrame, symbol: str, suffix: str) -> None:
 
 
 # ──────────────────────────────────────────────
+# CoinGecko Helpers
+# ──────────────────────────────────────────────
+
+def _coingecko_get(url: str, params: dict | None = None, max_retries: int = 3) -> requests.Response:
+    """CoinGecko GET with retry on 429 (exponential backoff)."""
+    for attempt in range(max_retries):
+        resp = requests.get(url, params=params, timeout=15)
+        if resp.status_code == 429:
+            wait = int(resp.headers.get("Retry-After", 60 * (2 ** attempt)))
+            log.warning("CoinGecko 429: %ds 후 재시도 (시도 %d/%d)", wait, attempt + 1, max_retries)
+            time.sleep(wait)
+            continue
+        resp.raise_for_status()
+        return resp
+    resp.raise_for_status()
+    return resp  # unreachable, satisfies type checker
+
+
+# ──────────────────────────────────────────────
 # CoinGecko News
 # ──────────────────────────────────────────────
 
@@ -172,8 +191,7 @@ def fetch_coingecko_news(pages: int = 5) -> pd.DataFrame:
 
     for page in range(1, pages + 1):
         try:
-            resp = requests.get(url, params={"page": page}, timeout=15)
-            resp.raise_for_status()
+            resp = _coingecko_get(url, params={"page": page})
             data = resp.json()
         except Exception as exc:
             log.warning("CoinGecko News page %d failed: %s", page, exc)
@@ -201,7 +219,7 @@ def fetch_coingecko_news(pages: int = 5) -> pd.DataFrame:
                 "published_at": published,
             })
 
-        time.sleep(2)
+        time.sleep(1.2)
 
     df = pd.DataFrame(records)
     if not df.empty:
@@ -277,8 +295,7 @@ def fetch_coingecko_stats(coin_id: str = "bitcoin") -> dict:
         "community_data": "false",
         "developer_data": "false",
     }
-    resp = requests.get(f"{COINGECKO_BASE}/coins/{coin_id}", params=params, timeout=15)
-    resp.raise_for_status()
+    resp = _coingecko_get(f"{COINGECKO_BASE}/coins/{coin_id}", params=params)
     data = resp.json()
     md = data.get("market_data", {})
 

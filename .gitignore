@@ -1,9 +1,12 @@
 # Claude
 plans/
 .claude/
+.claudeignore
 
 # Environment
 .env
+.env.local
+.env.*.local
 
 # Data (large files)
 data/raw/
@@ -12,14 +15,49 @@ output/
 
 # Python
 __pycache__/
+**/__pycache__/
 *.pyc
 *.pyo
+*.pyd
 .venv/
 venv/
 *.egg-info/
+*.egg
+.eggs/
+dist/*.egg
+pip-log.txt
+.pytest_cache/
+.coverage
 
 # Jupyter
 .ipynb_checkpoints/
+*.ipynb_checkpoints
 
 # FE
 Crypto Sentiment Dashboard.html
+node_modules/
+dist/
+package-lock.json
+
+# Vite
+*.local
+.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Trouble Shooting Notes
+trouble_shooting/
+
+# Generated data
+web/public/
+web/data/snapshot.json
+

@@ -89,3 +89,13 @@ export async function fetchFearGreed() {
     label:       data.data[0].value_classification,
   };
 }
+
+/** 백엔드 parquet에서 히스토리 klines 조회 */
+export async function fetchKlinesFromBackend(interval = '1h', fromTs = null, toTs = null, limit = 2000) {
+  const params = new URLSearchParams({ interval, limit });
+  if (fromTs != null) params.append('from_ts', fromTs);
+  if (toTs   != null) params.append('to_ts',   toTs);
+  const { data, error } = await safeFetch(`/api/data/klines?${params}`);
+  if (error || !Array.isArray(data)) return null;
+  return data;
+}

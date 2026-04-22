@@ -1,19 +1,27 @@
+import '../css/design-tokens.css';
+import '../css/layout.css';
+import '../css/components.css';
+import '../css/charts.css';
+
 /**
  * 앱 진입점 — 초기화 및 60s 갱신 루프
  */
 
 import { loadAnalysisData }                from './data.js';
 import { fetchTicker24h, fetchKlines,
-         fetchCoinGeckoMarket, fetchCoinGeckoNews,
-         fetchFearGreed }                   from './api.js';
-import { initDualChart, updateDualChart }   from './charts.js';
+         fetchCoinGeckoMarket,
+         fetchFearGreed,
+         fetchKlinesFromBackend }           from './api.js';
+import { initDualChart, updateDualChart,
+         resetZoom, zoomIn, zoomOut,
+         updateChartPins }                  from './charts.js';
 import { initScatterChart, initLagChart,
          updateScatterLag }                 from './correlation.js';
 import { updateGauge, renderNews }          from './sentiment.js';
 import { initPoll }                         from './poll.js';
 
 /* ── 캐시 ──────────────────────────────────────────────────────────── */
-const cache = { ticker: null, klines: null, market: null };
+const cache = { ticker: null, klines: null, market: null, news: null };
 
 /* ── 유틸 ──────────────────────────────────────────────────────────── */
 function fmt(n, decimals = 2) {
@@ -116,17 +124,78 @@ function showBanner(msg, isError = false) {
   el._timer = setTimeout(() => el.classList.add('hidden'), 4000);
 }
 
-/* ── 타임프레임 버튼 ────────────────────────────────────────────────── */
-function initTimeframeButtons() {
-  document.querySelectorAll('[data-tf]').forEach(btn => {
+/* ── 범위 버튼 & 줌 제어 ────────────────────────────────────────────── */
+const RANGE_CONFIG = {
+  '1D':  { interval: '1h', days: 1   },
+  '7D':  { interval: '1h', days: 7   },
+  '1M':  { interval: '1h', days: 30  },
+  '3M':  { interval: '1h', days: 90  },
+  '6M':  { interval: '1d', days: 180 },
+  '1Y':  { interval: '1d', days: 365 },
+  'ALL': { interval: '1d', days: null },
+};
+let activeRange = '7D';
+let chartOpts   = { priceMode: 'series', sentimentMode: 'scatter' };
+
+async function loadRange(rangeKey) {
+  const { interval, days } = RANGE_CONFIG[rangeKey];
+  const toTs   = Date.now();
+  const fromTs = days ? toTs - days * 24 * 60 * 60 * 1000 : null;
+  const limit  = interval === '1h' ? 2200 : 2500;
+  let klines = await fetchKlinesFromBackend(interval, fromTs, toTs, limit);
+
+  if (!klines || klines.length === 0) {
+    const fallbackLimit = interval === '1h'
+      ? Math.min(days ? days * 24 : 500, 1000)
+      : Math.min(days ?? 500, 500);
+    klines = await fetchKlines(interval, fallbackLimit);
+  }
+
+  if (!klines || klines.length === 0) { showBanner('히스토리 데이터 로드 실패', true); return; }
+  cache.klines = klines;
+  const showDate = days === null || days > 1;
+  updateDualChart(klines, showDate, cache.sentimentSeries ?? null);
+  if (cache.news) updateChartPins(klines, cache.news);
+  resetZoom();
+}
+
+function initRangeButtons() {
+  document.querySelectorAll('[data-range]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      document.querySelectorAll('[data-tf]').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('[data-range]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      const intervalMap = { '1H': '1h', '4H': '4h', '1D': '1d', '7D': '1d', '1M': '1d' };
-      const limitMap    = { '1H': 100, '4H': 100, '1D': 90, '7D': 42, '1M': 30 };
-      const tf = btn.dataset.tf;
-      const klines = await fetchKlines(intervalMap[tf] || '1h', limitMap[tf] || 100);
-      if (klines) { cache.klines = klines; updateDualChart(klines); }
+      activeRange = btn.dataset.range;
+      await loadRange(activeRange);
+    });
+  });
+}
+
+function initZoomControls() {
+  document.getElementById('btn-zoom-in')?.addEventListener('click', zoomIn);
+  document.getElementById('btn-zoom-out')?.addEventListener('click', zoomOut);
+  document.getElementById('btn-zoom-reset')?.addEventListener('click', resetZoom);
+}
+
+function initChartModeToggles() {
+  document.querySelectorAll('[data-price-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-price-mode]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      chartOpts.priceMode = btn.dataset.priceMode;
+      if (cache.klines) {
+        initDualChart('dual-chart', cache.klines, cache.sentimentSeries ?? [], cache.news ?? [], chartOpts);
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-sentiment-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-sentiment-mode]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      chartOpts.sentimentMode = btn.dataset.sentimentMode;
+      if (cache.klines) {
+        initDualChart('dual-chart', cache.klines, cache.sentimentSeries ?? [], cache.news ?? [], chartOpts);
+      }
     });
   });
 }
@@ -144,12 +213,11 @@ function initScatterTabs() {
 
 /* ── 주 갱신 루프 ────────────────────────────────────────────────────── */
 async function refresh() {
-  const [ticker, klines, market, fearGreed, news] = await Promise.all([
+  const [ticker, klines, market, fearGreed] = await Promise.all([
     fetchTicker24h(),
     fetchKlines('1h', 100),
     fetchCoinGeckoMarket(),
     fetchFearGreed(),
-    fetchCoinGeckoNews(),
   ]);
 
   if (ticker) cache.ticker = ticker;
@@ -159,10 +227,7 @@ async function refresh() {
   renderPrice(ticker, market);
   renderMarketStats(market, ticker, fearGreed, null);
 
-  if (klines && cache.sentimentSeries) updateDualChart(klines);
-
-  // 뉴스: 실시간 우선, 없으면 스냅샷 유지
-  if (news?.length) renderNews(news);
+  if (klines && cache.sentimentSeries && activeRange === '7D') updateDualChart(klines, false, cache.sentimentSeries);
 
   stampUpdated();
 }
@@ -171,7 +236,9 @@ async function refresh() {
 async function init() {
   startClock();
   initPoll();
-  initTimeframeButtons();
+  initRangeButtons();
+  initZoomControls();
+  initChartModeToggles();
   initScatterTabs();
 
   // 분석 데이터 (정적 스냅샷 or FastAPI)
@@ -184,18 +251,31 @@ async function init() {
 
   if (analysis) {
     cache.sentimentSeries = analysis.sentiment_series;
+    cache.news = analysis.news ?? [];
 
     updateGauge(analysis.sentiment_gauge?.score, analysis.sentiment_gauge?.count);
     renderNews(analysis.news);
     renderMarketStats(null, null, null, analysis.market_stats);
+
+    if (analysis.generated_at) {
+      const genEl = document.getElementById('data-generated-at');
+      if (genEl) {
+        const genTime = new Date(analysis.generated_at).toLocaleString('ko-KR', {
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul',
+        });
+        genEl.textContent = `데이터 기준: ${genTime} (KST)`;
+      }
+    }
   }
 
   // 실시간 데이터 초기 로드
-  const [ticker, klines, fearGreed] = await Promise.all([
+  const [ticker, rawKlines, fearGreed] = await Promise.all([
     fetchTicker24h(),
-    fetchKlines('1h', 100),
+    fetchKlinesFromBackend('1h', Date.now() - 7 * 24 * 3600 * 1000, Date.now(), 2000),
     fetchFearGreed(),
   ]);
+  const klines = (rawKlines && rawKlines.length > 0) ? rawKlines : await fetchKlines('1h', 168);
 
   if (ticker) cache.ticker = ticker;
   if (klines) cache.klines = klines;
@@ -203,7 +283,7 @@ async function init() {
   renderPrice(ticker, null);
 
   if (klines) {
-    initDualChart('dual-chart', klines, analysis?.sentiment_series ?? []);
+    initDualChart('dual-chart', klines, analysis?.sentiment_series ?? [], analysis?.news ?? [], chartOpts);
   }
 
   if (fearGreed) renderMarketStats(null, ticker, fearGreed, analysis?.market_stats);
