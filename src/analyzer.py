@@ -46,7 +46,9 @@ def aggregate_to_windows(sentiment_df: pd.DataFrame, window_minutes: int = 5) ->
     """
     df = sentiment_df.copy()
     df["published_at"] = pd.to_datetime(df["published_at"], utc=True)
-    df["confidence"] = df[["positive_prob", "negative_prob"]].max(axis=1)
+    pos_col = "finbert_positive_prob" if "finbert_positive_prob" in df.columns else "positive_prob"
+    neg_col = "finbert_negative_prob" if "finbert_negative_prob" in df.columns else "negative_prob"
+    df["confidence"] = df[[pos_col, neg_col]].max(axis=1)
 
     freq = f"{window_minutes}min"
     df["window_start"] = df["published_at"].dt.floor(freq)

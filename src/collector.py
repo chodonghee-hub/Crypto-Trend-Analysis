@@ -1,9 +1,10 @@
 """
 Data collection module:
-- Binance REST API  : 1-min / 1-hour BTC/USDT candles, 24-hour ticker
-- CoinGecko News API: BTC news headlines (free, no API key required)
-- RSS feeds         : CoinDesk, CoinTelegraph
-- CoinGecko API     : Market cap, ATH, circulating supply
+- Binance REST API      : 1-min / 1-hour BTC/USDT candles, 24-hour ticker
+- CoinGecko News API    : BTC news headlines (free, no API key required)
+- CryptoCompare News API: BTC news with full body text (free, 100k calls/month)
+- RSS feeds             : CoinDesk, CoinTelegraph
+- CoinGecko API         : Market cap, ATH, circulating supply
 """
 
 from __future__ import annotations
@@ -30,6 +31,8 @@ DATA_PROC.mkdir(parents=True, exist_ok=True)
 
 BINANCE_BASE = "https://api.binance.com/api/v3"
 COINGECKO_BASE = "https://api.coingecko.com/api/v3"
+CRYPTOCOMPARE_BASE = "https://min-api.cryptocompare.com/data/v2/news/"
+CRYPTOCOMPARE_API_KEY = os.getenv("CRYPTOCOMPARE_API_KEY", "")
 
 RSS_SOURCES = {
     "coindesk": "https://www.coindesk.com/arc/outboundfeeds/rss/",
@@ -177,6 +180,71 @@ def _coingecko_get(url: str, params: dict | None = None, max_retries: int = 3) -
 
 
 # ──────────────────────────────────────────────
+# CryptoCompare News
+# ──────────────────────────────────────────────
+
+def fetch_cryptocompare_news(
+    categories: str = "BTC",
+    pages: int = 3,
+    lang: str = "EN",
+) -> pd.DataFrame:
+    """
+    CryptoCompare News API에서 뉴스를 수집하고 저장한다.
+    페이지당 최대 50건, lTs 파라미터로 페이지네이션.
+    반환 필드: title, url, source, published_at, body
+    """
+    headers = {"Authorization": f"Apikey {CRYPTOCOMPARE_API_KEY}"} if CRYPTOCOMPARE_API_KEY else {}
+    records: list[dict] = []
+    seen_urls: set[str] = set()
+    last_ts: int | None = None
+
+    for page in range(1, pages + 1):
+        params: dict = {"lang": lang, "categories": categories}
+        if last_ts is not None:
+            params["lTs"] = last_ts
+
+        try:
+            resp = requests.get(CRYPTOCOMPARE_BASE, headers=headers, params=params, timeout=15)
+            resp.raise_for_status()
+            items = resp.json().get("Data", [])
+        except Exception as exc:
+            log.warning("CryptoCompare 페이지 %d 실패: %s", page, exc)
+            break
+
+        if not items:
+            break
+
+        for item in items:
+            url = item.get("url", "")
+            if not url or url in seen_urls:
+                continue
+            seen_urls.add(url)
+            ts = item.get("published_on")
+            published_at = (
+                pd.to_datetime(ts, unit="s", utc=True)
+                if isinstance(ts, (int, float)) else pd.NaT
+            )
+            records.append({
+                "title": item.get("title", "").strip(),
+                "url": url,
+                "source": item.get("source", ""),
+                "published_at": published_at,
+                "body": item.get("body", "").strip() or None,
+            })
+
+        last_ts = items[-1].get("published_on")
+        log.info("CryptoCompare 페이지 %d/%d 완료: 누적 %d건", page, pages, len(records))
+
+        if page < pages:
+            time.sleep(1.0)
+
+    df = pd.DataFrame(records)
+    if not df.empty:
+        _save_news_monthly(df)
+    return df
+
+
+# ──────────────────────────────────────────────
 # CoinGecko News
 # ──────────────────────────────────────────────
 
@@ -233,7 +301,15 @@ def _save_news_monthly(df: pd.DataFrame) -> None:
         fname = DATA_RAW / f"news_{year:04d}{month:02d}.csv"
         if fname.exists():
             existing = pd.read_csv(fname, parse_dates=["published_at"])
-            group = pd.concat([existing, group]).drop_duplicates("url").sort_values("published_at")
+            if "body" not in existing.columns:
+                existing["body"] = None
+            if "body" not in group.columns:
+                group = group.copy()
+                group["body"] = None
+            group = pd.concat([existing, group]).drop_duplicates("url", keep="last").sort_values("published_at")
+        elif "body" not in group.columns:
+            group = group.copy()
+            group["body"] = None
         group.to_csv(fname, index=False)
     log.info("Saved %d news records", len(df))
 

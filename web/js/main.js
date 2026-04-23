@@ -23,6 +23,8 @@ import { initPoll }                         from './poll.js';
 /* ── 캐시 ──────────────────────────────────────────────────────────── */
 const cache = { ticker: null, klines: null, market: null, news: null };
 
+let _lastSentimentGeneratedAt = null; // 마지막으로 반영한 payload의 generated_at
+
 /* ── 유틸 ──────────────────────────────────────────────────────────── */
 function fmt(n, decimals = 2) {
   if (n == null) return '—';
@@ -221,15 +223,63 @@ async function refresh() {
   ]);
 
   if (ticker) cache.ticker = ticker;
-  if (klines) cache.klines = klines;
   if (market) cache.market = market;
+  // cache.klines는 여기서 갱신하지 않음 — loadRange()가 범위별 klines를 관리
 
   renderPrice(ticker, market);
   renderMarketStats(market, ticker, fearGreed, null);
 
-  if (klines && cache.sentimentSeries && activeRange === '7D') updateDualChart(klines, false, cache.sentimentSeries);
+  // 매 60s마다 감성 데이터 재조회 — 서버 LRU 캐시가 파일 변경 시에만 재빌드하므로 부담 없음
+  try {
+    const analysis = await loadAnalysisData();
+    const incoming = analysis?.generated_at ?? null;
+    if (analysis?.sentiment_series && incoming !== _lastSentimentGeneratedAt) {
+      _lastSentimentGeneratedAt = incoming;
+      cache.sentimentSeries = analysis.sentiment_series;
+      cache.news = analysis.news ?? cache.news;
+      updateGauge(analysis.sentiment_gauge?.score, analysis.sentiment_gauge?.count);
+      renderNews(analysis.news);
+
+      // 모든 범위에서 감성 데이터 변경 시 차트 갱신
+      if (cache.klines) {
+        const { days } = RANGE_CONFIG[activeRange] ?? {};
+        const showDate = days === null || days > 1;
+        initDualChart('dual-chart', cache.klines, cache.sentimentSeries, cache.news ?? [], { ...chartOpts, showDate });
+      }
+    }
+  } catch (_) { /* 감성 갱신 실패는 조용히 무시 */ }
 
   stampUpdated();
+}
+
+/* ── 감성 데이터 수동 새로고침 ──────────────────────────────────────── */
+async function refreshSentimentData() {
+  const btn = document.getElementById('btn-refresh-sentiment');
+  const original = btn?.textContent?.trim() ?? '감성 데이터 불러오기';
+  if (btn) { btn.textContent = '불러오는 중...'; btn.disabled = true; }
+  try {
+    const analysis = await loadAnalysisData({ retries: 1 });
+    if (analysis?.sentiment_series?.length) {
+      _lastSentimentGeneratedAt = analysis.generated_at ?? null;
+      cache.sentimentSeries = analysis.sentiment_series;
+      cache.news = analysis.news ?? cache.news;
+      updateGauge(analysis.sentiment_gauge?.score, analysis.sentiment_gauge?.count);
+      renderNews(analysis.news);
+      if (cache.klines) {
+        const { days } = RANGE_CONFIG[activeRange] ?? {};
+        const showDate = days === null || days > 1;
+        initDualChart('dual-chart', cache.klines, cache.sentimentSeries, cache.news ?? [],
+          { ...chartOpts, showDate });
+      }
+      showBanner(`감성 데이터 갱신 완료 (${cache.sentimentSeries.length}건)`);
+    } else {
+      showBanner('감성 데이터 없음 — 서버 파이프라인을 먼저 실행하세요', true);
+    }
+  } catch (_) {
+    showBanner('감성 데이터 로드 실패', true);
+  } finally {
+    if (btn) { btn.textContent = original; btn.disabled = false; }
+  }
 }
 
 /* ── 초기화 ─────────────────────────────────────────────────────────── */
@@ -240,6 +290,7 @@ async function init() {
   initZoomControls();
   initChartModeToggles();
   initScatterTabs();
+  document.getElementById('btn-refresh-sentiment')?.addEventListener('click', refreshSentimentData);
 
   // 분석 데이터 (정적 스냅샷 or FastAPI)
   let analysis = null;

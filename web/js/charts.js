@@ -48,19 +48,22 @@ function buildNewsScatter(klines, news) {
   if (!news?.length || !klines?.length)
     return { scatterPos, scatterNeu, scatterNeg, lookupPos, lookupNeu, lookupNeg };
 
-  const avgInterval = klines.length > 1
-    ? (klines[klines.length - 1].time - klines[0].time) / (klines.length - 1)
-    : Infinity;
-  const maxDiff = avgInterval * 2;
+  const startTime = klines[0].time;
+  const endTime   = klines[klines.length - 1].time;
+  const halfInterval = klines.length > 1
+    ? (endTime - startTime) / (klines.length - 1) / 2
+    : 0;
 
   news.forEach(article => {
     const nTime = new Date(article.published_at).getTime();
+    // klines 범위를 완전히 벗어난 뉴스는 제외
+    if (nTime < startTime - halfInterval || nTime > endTime + halfInterval) return;
+
     let bestIdx = 0, bestDiff = Infinity;
     klines.forEach((k, i) => {
       const diff = Math.abs(k.time - nTime);
       if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
     });
-    if (bestDiff > maxDiff) return;
 
     const score = article.score ?? 0;
     const label = article.sentiment_label ??
@@ -82,29 +85,79 @@ function buildNewsScatter(klines, news) {
   return { scatterPos, scatterNeu, scatterNeg, lookupPos, lookupNeu, lookupNeg };
 }
 
-/** sentimentSeries → kline 인덱스 매핑. 단일 라인 데이터 반환 */
-function buildSentimentLine(klines, sentimentSeries) {
-  const data = new Array(klines.length).fill(null);
-  if (!sentimentSeries?.length || !klines?.length) return data;
+/**
+ * sentimentSeries → kline 인덱스별 Positive/Neutral/Negative 산포도 데이터 생성.
+ * 같은 kline에 여러 윈도우가 매핑되면 절댓값이 가장 큰 점을 사용한다.
+ */
+function buildScatterFromSeries(klines, sentimentSeries) {
+  const n = klines.length;
+  const scatterPos = new Array(n).fill(null);
+  const scatterNeu = new Array(n).fill(null);
+  const scatterNeg = new Array(n).fill(null);
 
-  const avgInterval = klines.length > 1
-    ? (klines[klines.length - 1].time - klines[0].time) / (klines.length - 1)
-    : Infinity;
-  const maxDiff = avgInterval * 3;
+  if (!sentimentSeries?.length || !klines?.length)
+    return { scatterPos, scatterNeu, scatterNeg };
+
+  const startTime = klines[0].time;
+  const endTime   = klines[klines.length - 1].time;
+  const halfInterval = klines.length > 1
+    ? (endTime - startTime) / (klines.length - 1) / 2
+    : 0;
 
   sentimentSeries.forEach(entry => {
     const ts = new Date(entry.timestamp).getTime();
+    if (ts < startTime - halfInterval || ts > endTime + halfInterval) return;
+
     let bestIdx = 0, bestDiff = Infinity;
     klines.forEach((k, i) => {
       const diff = Math.abs(k.time - ts);
       if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
     });
-    if (bestDiff <= maxDiff && data[bestIdx] === null) {
-      data[bestIdx] = entry.score ?? 0;
+
+    const score = entry.score ?? 0;
+    if (score > 0.05) {
+      if (scatterPos[bestIdx] === null || Math.abs(score) > Math.abs(scatterPos[bestIdx]))
+        scatterPos[bestIdx] = score;
+    } else if (score < -0.05) {
+      if (scatterNeg[bestIdx] === null || Math.abs(score) > Math.abs(scatterNeg[bestIdx]))
+        scatterNeg[bestIdx] = score;
+    } else {
+      if (scatterNeu[bestIdx] === null || Math.abs(score) > Math.abs(scatterNeu[bestIdx]))
+        scatterNeu[bestIdx] = score;
     }
   });
 
-  return data;
+  return { scatterPos, scatterNeu, scatterNeg };
+}
+
+/** sentimentSeries → kline 인덱스 매핑. 같은 kline에 매핑된 값은 평균으로 표시 */
+function buildSentimentLine(klines, sentimentSeries) {
+  if (!sentimentSeries?.length || !klines?.length) return new Array(klines.length).fill(null);
+
+  const startTime = klines[0].time;
+  const endTime   = klines[klines.length - 1].time;
+  const halfInterval = klines.length > 1
+    ? (endTime - startTime) / (klines.length - 1) / 2
+    : 0;
+
+  const sums   = new Array(klines.length).fill(0);
+  const counts = new Array(klines.length).fill(0);
+
+  sentimentSeries.forEach(entry => {
+    const ts = new Date(entry.timestamp).getTime();
+    // klines 범위를 완전히 벗어난 항목은 제외
+    if (ts < startTime - halfInterval || ts > endTime + halfInterval) return;
+
+    let bestIdx = 0, bestDiff = Infinity;
+    klines.forEach((k, i) => {
+      const diff = Math.abs(k.time - ts);
+      if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+    });
+    sums[bestIdx]   += entry.score ?? 0;
+    counts[bestIdx] += 1;
+  });
+
+  return sums.map((s, i) => counts[i] > 0 ? s / counts[i] : null);
 }
 
 function getLookupByDatasetIndex(chart, datasetIndex) {
@@ -252,9 +305,10 @@ export function initDualChart(canvasId, klines, sentimentSeries, news = [], opts
   let lookup = null;
 
   if (sentimentMode === 'scatter') {
-    const { scatterPos, scatterNeu, scatterNeg, lookupPos, lookupNeu, lookupNeg } =
-      buildNewsScatter(klines, news);
-    lookup = { pos: lookupPos, neu: lookupNeu, neg: lookupNeg };
+    // sentiment_series(5분 윈도우)를 scatter 점으로 표시 — 전체 분석 기간 커버
+    const { scatterPos, scatterNeu, scatterNeg } =
+      buildScatterFromSeries(klines, sentimentSeries);
+    lookup = null; // 개별 기사 URL 없음
     sentimentDatasets = [
       { label: 'Positive', data: scatterPos, backgroundColor: POSITIVE_COLOR, ...SCATTER_BASE },
       { label: 'Neutral',  data: scatterNeu, backgroundColor: NEUTRAL_COLOR,  ...SCATTER_BASE },
@@ -269,6 +323,8 @@ export function initDualChart(canvasId, klines, sentimentSeries, news = [], opts
       v < -0.05  ? NEGATIVE_COLOR :
                    NEUTRAL_COLOR
     );
+    const pointRadii      = lineData.map(v => v === null ? 0 : 4);
+    const pointHoverRadii = lineData.map(v => v === null ? 0 : 7);
     sentimentDatasets = [{
       label: '감성 (평균)',
       data: lineData,
@@ -278,8 +334,8 @@ export function initDualChart(canvasId, klines, sentimentSeries, news = [], opts
       borderWidth: 1.5,
       showLine: true,
       spanGaps: true,
-      pointRadius: 4,
-      pointHoverRadius: 7,
+      pointRadius: pointRadii,
+      pointHoverRadius: pointHoverRadii,
       pointBackgroundColor: pointColors,
       pointBorderColor: 'transparent',
       tension: 0.3,
@@ -320,6 +376,17 @@ export function initDualChart(canvasId, klines, sentimentSeries, news = [], opts
           bodyColor: '#f2f2f2',
           padding: 10,
           callbacks: {
+            title(items) {
+              if (!items.length) return '';
+              const idx = items[0].dataIndex;
+              const k = klines[idx];
+              if (!k) return items[0].label ?? '';
+              const d = new Date(k.time);
+              return d.toLocaleString('ko-KR', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit',
+              });
+            },
             label(ctx) {
               if (ctx.datasetIndex === 0) {
                 if (dualChart?._priceMode === 'candle') {
@@ -332,11 +399,6 @@ export function initDualChart(canvasId, klines, sentimentSeries, news = [], opts
                 return `  가격: $${ctx.parsed.y.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
               }
               if (ctx.parsed.y == null) return null;
-              if (dualChart?._sentimentMode === 'scatter') {
-                const lk = getLookupByDatasetIndex(dualChart, ctx.datasetIndex);
-                const entry = lk?.[ctx.dataIndex];
-                if (entry?.title) return `  뉴스: ${entry.title}`;
-              }
               return `  감성: ${ctx.parsed.y.toFixed(3)}`;
             },
           },
