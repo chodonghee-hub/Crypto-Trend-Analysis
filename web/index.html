@@ -78,7 +78,13 @@
     <section class="card card--flush">
       <div style="padding: var(--sp-5);">
         <div class="chart-header">
-          <span class="section-title">가격 + 감성 오버레이</span>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; align-items:center; gap:var(--sp-2);">
+              <span class="section-title">가격 + 감성 오버레이</span>
+              <button class="info-btn" data-tooltip="BTC 가격(왼쪽 축)과 뉴스 감성 점수(오른쪽 축, -1~+1)를 겹쳐서 표시합니다. 초록 점(긍정)·회색 점(중립)·빨강 점(부정)은 각 뉴스 기사의 감성을 나타냅니다. 가격 급변 구간에서 감성 점수의 방향과 비교해 시장 심리를 파악할 수 있습니다.">i</button>
+            </div>
+            <span style="font-size:11px; color:var(--color-text-tertiary); font-family:var(--font-body);">BTC 가격과 AI 감성 점수 동시 비교</span>
+          </div>
           <div style="display:flex; gap:var(--sp-2); align-items:center; flex-wrap:wrap;">
             <div class="btn-group" id="price-mode-group">
               <button class="btn active" data-price-mode="series">Line</button>
@@ -112,7 +118,11 @@
 
       <!-- Zone C: Performance -->
       <section class="card">
-        <div class="card__title">퍼포먼스</div>
+        <div class="card__title">
+          퍼포먼스
+          <button class="info-btn" data-tooltip="BTC 가격의 시간대별 변동률입니다. 막대 아래 범위 바는 오늘의 24시간 저가(빨강)~고가(초록) 구간에서 현재가의 위치를 보여줍니다. 흰 점이 오른쪽에 가까울수록 현재가가 오늘 고점에 근접함을 의미합니다.">i</button>
+        </div>
+        <p class="section-desc">시간대별 가격 변동률 및 당일 가격 범위</p>
         <div class="perf-grid">
           <div>
             <div class="perf-item__label">역대 최고가</div>
@@ -146,7 +156,11 @@
 
       <!-- Zone D: Market Stats -->
       <section class="card">
-        <div class="card__title">시장 통계</div>
+        <div class="card__title">
+          시장 통계
+          <button class="info-btn" data-tooltip="BTC의 핵심 시장 지표입니다. 공포&탐욕 지수는 0(극단적 공포)~100(극단적 탐욕)으로 시장 심리를 수치화하며, BTC 도미넌스는 전체 암호화폐 시총 중 BTC 비중입니다. 도미넌스가 높을수록 알트코인 대비 BTC 선호도가 높습니다.">i</button>
+        </div>
+        <p class="section-desc">시가총액, 거래량, 공포&탐욕 등 핵심 온체인 지표</p>
         <div class="market-grid">
           <div>
             <div class="stat-cell__label">시가총액</div>
@@ -182,7 +196,13 @@
       <!-- Zone E: Scatter -->
       <section class="card">
         <div class="scatter-header">
-          <span class="section-title">감성 vs. 수익률</span>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; align-items:center; gap:var(--sp-2);">
+              <span class="section-title">감성 vs. 수익률</span>
+              <button class="info-btn" data-tooltip="X축: 뉴스 감성 점수(-1~+1), Y축: 이후 가격 수익률(%). 점이 우상향에 많을수록 긍정 뉴스 이후 가격이 상승하는 경향이 있습니다. T+15분은 뉴스 발행 15분 후, T+60분은 60분 후의 수익률을 사용합니다. 추세선의 기울기가 양수이면 감성과 수익률이 정비례 관계입니다.">i</button>
+            </div>
+            <span style="font-size:11px; color:var(--color-text-tertiary); font-family:var(--font-body);">뉴스 감성 점수와 이후 가격 수익률의 상관 분포</span>
+          </div>
           <div class="btn-group">
             <button class="btn active" data-lag="return_15m">T+15분</button>
             <button class="btn" data-lag="return_60m">T+60분</button>
@@ -207,7 +227,13 @@
       <!-- Zone F: Lag bar chart -->
       <section class="card">
         <div class="lag-header">
-          <span class="section-title">시차별 상관관계</span>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; align-items:center; gap:var(--sp-2);">
+              <span class="section-title">시차별 상관관계</span>
+              <button class="info-btn" data-tooltip="뉴스 감성 점수와 미래 가격 수익률 간의 피어슨 상관계수(r)를 시간대(T+5m·15m·30m·60m)별로 나타냅니다. |r|이 1에 가까울수록 상관이 강하며, 파랑은 양의 상관(감성↑→가격↑), 빨강은 음의 상관입니다. 막대 위 p값이 0.05 미만이면 통계적으로 유의합니다.">i</button>
+            </div>
+            <span style="font-size:11px; color:var(--color-text-tertiary); font-family:var(--font-body);">감성 점수가 미래 가격에 미치는 시간별 영향력(피어슨 r)</span>
+          </div>
         </div>
         <div class="lag-canvas-wrap">
           <canvas id="lag-canvas"></canvas>
@@ -236,7 +262,11 @@
 
     <!-- Sentiment Gauge ─────────────────────────────────────────── -->
     <section class="card">
-      <div class="card__title">감성 지수</div>
+      <div class="card__title">
+        감성 지수
+        <button class="info-btn" data-tooltip="수집된 뉴스 기사를 FinBERT + Gemma AI 모델로 분석한 평균 감성 점수입니다. -1에 가까울수록 부정적(약세) 뉴스가 많고, +1에 가까울수록 긍정적(강세) 뉴스가 많음을 의미합니다. 바늘이 오른쪽으로 기울수록 시장 심리가 낙관적입니다.">i</button>
+      </div>
+      <p class="section-desc">AI가 분석한 뉴스 기사의 평균 감성 점수 (−1 약세 ~ +1 강세)</p>
       <div class="gauge-score neutral" id="gauge-score">—</div>
       <div class="gauge-meta">
         <span id="gauge-count">—</span>건 (오늘)
@@ -258,7 +288,7 @@
 
     <!-- Community Poll ──────────────────────────────────────────── -->
     <section class="card">
-      <div class="card__title">커뮤니티 투표</div>
+      <div class="card__title" style="margin-bottom:var(--sp-4);">커뮤니티 투표</div>
       <p style="font-size:12px; color:var(--color-text-tertiary); margin-bottom:var(--sp-4);">
         BTC는 어디로 향할까요?
       </p>
@@ -293,7 +323,7 @@
 
     <!-- News Headlines ──────────────────────────────────────────── -->
     <section class="card" style="flex:1; min-height:0;">
-      <div class="card__title">최신 뉴스</div>
+      <div class="card__title" style="margin-bottom:var(--sp-4);">최신 뉴스</div>
       <div class="news-list" id="news-list">
         <div class="empty-state">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-state__icon">

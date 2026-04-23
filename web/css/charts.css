@@ -5,7 +5,7 @@
 
 .chart-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: var(--sp-4);
   flex-wrap: wrap;
@@ -48,7 +48,7 @@
 .scatter-section {}
 .scatter-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: var(--sp-4);
   flex-wrap: wrap;
@@ -65,7 +65,7 @@
 .lag-section {}
 .lag-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: var(--sp-4);
 }

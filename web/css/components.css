@@ -85,7 +85,72 @@
   color: var(--color-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 2px;
+  margin-bottom: var(--sp-1);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.section-desc {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  line-height: 1.55;
   margin-bottom: var(--sp-4);
+  font-family: var(--font-body);
+}
+
+/* ── Info tooltip button ─────────────────────────────────────────────── */
+.info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-text-tertiary);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: 9px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  cursor: help;
+  position: relative;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: border-color 0.15s, color 0.15s;
+}
+.info-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+.info-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1e;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  width: 260px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  white-space: normal;
+  text-align: left;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+.info-btn:hover::after,
+.info-btn:focus::after {
+  opacity: 1;
 }
 
 /* ── Badges ──────────────────────────────────────────────────────────── */
