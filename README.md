@@ -439,10 +439,13 @@ python -m uvicorn server:app --port 8080
 
 ## 참조 문서
 
-| 문서 | 내용 |
-|------|------|
-| [plans/PRD_Crypto_Sentiment_Analysis.md](plans/PRD_Crypto_Sentiment_Analysis.md) | 핵심 분석 파이프라인 PRD |
-| [plans/PRD_Crypto_Sentiment_Dashboard_Web.md](plans/PRD_Crypto_Sentiment_Dashboard_Web.md) | 웹 대시보드 PRD |
-| [plans/PRD_Dual_Model_Sentiment_Gemma_FinBERT.md](plans/PRD_Dual_Model_Sentiment_Gemma_FinBERT.md) | 앙상블 감성 분석 PRD |
-| [plans/USAGE.md](plans/USAGE.md) | 상세 실행 가이드 |
-| [plans/DESIGN.md](plans/DESIGN.md) | UI 디자인 시스템 |
+### 분석 노트북
+
+| 노트북 | 설명 |
+|--------|------|
+| [notebooks/01_data_collection.ipynb](notebooks/01_data_collection.ipynb) | Binance 1분·1시간 캔들, CryptoCompare/CoinGecko/RSS 뉴스 수집 및 월별 저장 |
+| [notebooks/02_sentiment_scoring.ipynb](notebooks/02_sentiment_scoring.ipynb) | FinBERT + Gemma 앙상블로 뉴스 감성 점수화, 중립 필터 적용 |
+| [notebooks/03_correlation_analysis.ipynb](notebooks/03_correlation_analysis.ipynb) | 5분 윈도우 감성 집계 → T+5/15/30/60m 수익률과 피어슨 상관계수 도출 |
+| [notebooks/04_visualization.ipynb](notebooks/04_visualization.ipynb) | matplotlib 6-zone 대시보드 PNG 생성 (가격·감성·상관계수·산점도) |
+| [notebooks/05_cryptocompare_api.ipynb](notebooks/05_cryptocompare_api.ipynb) | CryptoCompare API 키 설정, 본문 포함 뉴스 수집 및 저장 파이프라인 검증 |
+| [notebooks/06_ensemble_price_prediction.ipynb](notebooks/06_ensemble_price_prediction.ipynb) | FinBERT:Gemma 가중치 5종 비교, 시간대별 방향 예측 적중률 분석 및 최적 가중치 선정 |
