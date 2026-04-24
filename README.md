@@ -266,6 +266,10 @@ $$F_1 = \frac{2 \cdot \text{Precision} \cdot \text{Recall}}{\text{Precision} + \
 **기준선 (Baseline)**: 50% — 무작위 예측(동전 던지기) 수준  
 기준선 대비 **+5%p 이상** 이면 유의미한 예측력으로 판단합니다.
 
+<div align=center>
+    <img width="1370" height="698" alt="image" src="https://github.com/user-attachments/assets/b13c334a-82f0-4a6a-921c-599a621e1d11" />
+</div>
+
 ---
 
 ### 8. 최적 앙상블 가중치 탐색
