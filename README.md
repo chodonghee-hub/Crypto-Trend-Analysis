@@ -366,7 +366,7 @@ $$\alpha^* = \underset{\alpha}{\arg\max}\ \frac{1}{4}\sum_{\tau \in \{5,\, 15,\,
 
 ---
 
-## 감성 분석 파이프라인 상세
+## 감성 분석 파이프라인 상세 및 자동화
 
 ```
 뉴스 CSV (title + body)
@@ -390,6 +390,10 @@ $$\alpha^* = \underset{\alpha}{\arg\max}\ \frac{1}{4}\sum_{\tau \in \{5,\, 15,\,
                           ▼
           data/processed/news_sentiment.csv
 ```
+
+<div align=center>
+    <img width="1632" height="866" alt="image" src="https://github.com/user-attachments/assets/7be578d6-2ed0-491f-9e83-2194b27843e3" />
+</div>
 
 ---
 
