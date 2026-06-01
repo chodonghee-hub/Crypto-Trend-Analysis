@@ -3,6 +3,11 @@
 글로벌 암호화폐 뉴스의 감성을 AI 모델로 수치화하고, 비트코인 가격 변동과의 시차별 상관관계를 분석하는 데이터 분석 프로젝트입니다.  
 FinBERT와 Gemma를 앙상블하여 뉴스 감성을 정량화하고, 실시간 웹 대시보드로 시각화합니다.
 
+
+<div align='center'>
+  <img width="1343" height="673" alt="image" src="https://github.com/user-attachments/assets/351b2432-08be-428e-90e2-0fa058f60918" />
+</div>
+
 ---
 
 ## 핵심 가설
@@ -68,14 +73,14 @@ Crypto-Trend-Analysis/
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  Step 1. 데이터 수집                                                  │
+│  Step 1. 데이터 수집                                                 │
 │                                                                     │
 │  Binance REST API          CryptoCompare API          RSS 피드       │
-│  (BTC/USDT 1min·1h 캔들)   (뉴스 + 본문 포함)    (CoinDesk 등)         │
+│  (BTC/USDT 1min·1h 캔들)   (뉴스 + 본문 포함)    (CoinDesk 등)        │
 │         │                          │                     │          │
 │         ▼                          ▼                     ▼          │
 │   data/raw/*.parquet         data/raw/*.csv        data/raw/*.csv   │
-│   (월별 분할 저장)            (월별 분할 저장)     (월별 분할 저장)       │
+│   (월별 분할 저장)            (월별 분할 저장)     (월별 분할 저장)     │
 └──────────────────────────────────┬──────────────────────────────────┘
                                    │
                                    ▼
@@ -84,38 +89,38 @@ Crypto-Trend-Analysis/
 │                                                                     │
 │  title + body[:512]                                                 │
 │        │                                                            │
-│        ├──▶ FinBERT (ProsusAI/finbert)  ← CPU/GPU 자동 감지          │
+│        ├──▶ FinBERT (ProsusAI/finbert)  ← CPU/GPU 자동 감지         │
 │        │    → finbert_score = P(positive) - P(negative)             │
 │        │                                                            │
-│        └──▶ Gemma 3 1b (Ollama HTTP API)  ← 미실행 시 폴백           │
+│        └──▶ Gemma 3 1b (Ollama HTTP API)  ← 미실행 시 폴백          │
 │             → gemma_score (positive/neutral/negative → 확률 매핑)    │
 │                                                                     │
-│        앙상블 결합 → ensemble_score, agreement_score, is_valid        │
+│        앙상블 결합 → ensemble_score, agreement_score, is_valid       │
 │                                                                     │
 │   data/processed/news_sentiment.csv                                 │
 └──────────────────────────────────┬──────────────────────────────────┘
                                    │
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  Step 3. 상관관계 분석 (analyzer.py)                                  │
+│  Step 3. 상관관계 분석 (analyzer.py)                                 │
 │                                                                     │
 │  news_sentiment.csv           btc_1m_*.parquet                      │
 │        │                            │                               │
 │        ▼                            ▼                               │
-│  5분 윈도우 신뢰도 가중집계    T+5m/15m/30m/60m 수익률 계산              │
+│  5분 윈도우 신뢰도 가중집계    T+5m/15m/30m/60m 수익률 계산            │
 │        │                            │                               │
 │        └──────────┬─────────────────┘                               │
 │                   ▼                                                 │
-│         Pearson 상관계수 + 방향 예측 적중률                             │
+│         Pearson 상관계수 + 방향 예측 적중률                           │
 │                                                                     │
 │   data/processed/merged_analysis.csv                                │
 └──────────────────────────────────┬──────────────────────────────────┘
                                    │
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  Step 4. 시각화 & 배포                                                │
+│  Step 4. 시각화 & 배포                                               │
 │                                                                     │
-│  matplotlib 대시보드 PNG           웹 대시보드 (Vite + FastAPI)        │
+│  matplotlib 대시보드 PNG           웹 대시보드 (Vite + FastAPI)       │
 │  output/dashboard_{1D/7D/1M/3M}   http://localhost:5173             │
 │  .png                              60초 자동 갱신 폴링                │
 └─────────────────────────────────────────────────────────────────────┘
@@ -309,7 +314,7 @@ $$r = \frac{\sum_{i}(x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i}(x_i - \bar{x}
 | −0.3 이하 | 오히려 역방향 경향 |
 
 <div align='center'>
-    <img width="667" height="413" alt="image" src="https://github.com/user-attachments/assets/d302a871-0533-4f50-b091-9fa1a4485627" />
+    <img width="490" height="290" alt="image" src="https://github.com/user-attachments/assets/d302a871-0533-4f50-b091-9fa1a4485627" />
 </div>
 
 ---
