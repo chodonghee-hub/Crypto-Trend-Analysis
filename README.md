@@ -68,56 +68,56 @@ Crypto-Trend-Analysis/
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  Step 1. 데이터 수집                                                 │
-│                                                                      │
+│  Step 1. 데이터 수집                                                  │
+│                                                                     │
 │  Binance REST API          CryptoCompare API          RSS 피드       │
-│  (BTC/USDT 1min·1h 캔들)   (뉴스 + 본문 포함)    (CoinDesk 등)    │
-│         │                          │                     │           │
-│         ▼                          ▼                     ▼           │
+│  (BTC/USDT 1min·1h 캔들)   (뉴스 + 본문 포함)    (CoinDesk 등)         │
+│         │                          │                     │          │
+│         ▼                          ▼                     ▼          │
 │   data/raw/*.parquet         data/raw/*.csv        data/raw/*.csv   │
-│   (월별 분할 저장)            (월별 분할 저장)     (월별 분할 저장) │
+│   (월별 분할 저장)            (월별 분할 저장)     (월별 분할 저장)       │
 └──────────────────────────────────┬──────────────────────────────────┘
                                    │
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │  Step 2. 감성 분석 (sentiment.py)                                    │
-│                                                                      │
-│  title + body[:512]                                                  │
-│        │                                                             │
-│        ├──▶ FinBERT (ProsusAI/finbert)  ← CPU/GPU 자동 감지        │
+│                                                                     │
+│  title + body[:512]                                                 │
+│        │                                                            │
+│        ├──▶ FinBERT (ProsusAI/finbert)  ← CPU/GPU 자동 감지          │
 │        │    → finbert_score = P(positive) - P(negative)             │
-│        │                                                             │
-│        └──▶ Gemma 3 1b (Ollama HTTP API)  ← 미실행 시 폴백        │
-│             → gemma_score (positive/neutral/negative → 확률 매핑)   │
-│                                                                      │
-│        앙상블 결합 → ensemble_score, agreement_score, is_valid      │
-│                                                                      │
-│   data/processed/news_sentiment.csv                                  │
+│        │                                                            │
+│        └──▶ Gemma 3 1b (Ollama HTTP API)  ← 미실행 시 폴백           │
+│             → gemma_score (positive/neutral/negative → 확률 매핑)    │
+│                                                                     │
+│        앙상블 결합 → ensemble_score, agreement_score, is_valid        │
+│                                                                     │
+│   data/processed/news_sentiment.csv                                 │
 └──────────────────────────────────┬──────────────────────────────────┘
                                    │
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  Step 3. 상관관계 분석 (analyzer.py)                                 │
-│                                                                      │
+│  Step 3. 상관관계 분석 (analyzer.py)                                  │
+│                                                                     │
 │  news_sentiment.csv           btc_1m_*.parquet                      │
-│        │                            │                                │
-│        ▼                            ▼                                │
-│  5분 윈도우 신뢰도 가중집계    T+5m/15m/30m/60m 수익률 계산         │
-│        │                            │                                │
+│        │                            │                               │
+│        ▼                            ▼                               │
+│  5분 윈도우 신뢰도 가중집계    T+5m/15m/30m/60m 수익률 계산              │
+│        │                            │                               │
 │        └──────────┬─────────────────┘                               │
-│                   ▼                                                  │
-│         Pearson 상관계수 + 방향 예측 적중률                          │
-│                                                                      │
-│   data/processed/merged_analysis.csv                                 │
+│                   ▼                                                 │
+│         Pearson 상관계수 + 방향 예측 적중률                             │
+│                                                                     │
+│   data/processed/merged_analysis.csv                                │
 └──────────────────────────────────┬──────────────────────────────────┘
                                    │
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  Step 4. 시각화 & 배포                                               │
-│                                                                      │
-│  matplotlib 대시보드 PNG           웹 대시보드 (Vite + FastAPI)     │
+│  Step 4. 시각화 & 배포                                                │
+│                                                                     │
+│  matplotlib 대시보드 PNG           웹 대시보드 (Vite + FastAPI)        │
 │  output/dashboard_{1D/7D/1M/3M}   http://localhost:5173             │
-│  .png                              60초 자동 갱신 폴링              │
+│  .png                              60초 자동 갱신 폴링                │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -279,6 +279,9 @@ $$r_{+N} = \frac{close_{t+N} - close_{t}}{close_{t}} \times 100\ (\%)$$
 > * 이 계산을 T+5분, T+15분, T+30분, T+60분 4개 구간에 대해 각각 수행합니다.  
 > * "뉴스가 나온 뒤 몇 분 만에 가격 반응이 가장 잘 나타나는가"를 알아내기 위해서입니다.
 
+<div align=center>
+</div>
+
 ---
 
 ### 6. 피어슨 상관계수 분석
@@ -304,6 +307,10 @@ $$r = \frac{\sum_{i}(x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i}(x_i - \bar{x}
 | +0.3 ~ +0.5 | 약간의 양의 관계 |
 | −0.1 ~ +0.1 | 거의 무관 |
 | −0.3 이하 | 오히려 역방향 경향 |
+
+<div align='center'>
+    <img width="667" height="413" alt="image" src="https://github.com/user-attachments/assets/d302a871-0533-4f50-b091-9fa1a4485627" />
+</div>
 
 ---
 
@@ -340,7 +347,7 @@ $$r = \frac{\sum_{i}(x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i}(x_i - \bar{x}
 이 프로젝트에서는 기준선 대비 **+5%p 이상**이면 감성 분석이 유의미한 예측력을 가진다고 판단합니다.
 
 <div align=center>
-    <img width="1370" height="698" alt="image" src="https://github.com/user-attachments/assets/b13c334a-82f0-4a6a-921c-599a621e1d11" />
+    <img width="338" height="258" alt="image" src="https://github.com/user-attachments/assets/afea5cfd-3aa5-4084-b8a0-dcee6ae63109" />
 </div>
 
 ---
